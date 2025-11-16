@@ -1,0 +1,46 @@
+services:
+  server:
+    build: .
+    command: ["./app"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${PORT}:${PORT}"
+    networks:
+      - backend-postgres
+    env_file:
+      - .env
+
+  migrations:
+    build: .
+    command: ["./migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend-postgres
+    env_file:
+      - .env
+
+  postgres:
+    image: postgres:17.5-alpine3.21
+    container_name: postgres
+    env_file:
+      - .env
+    networks:
+      - backend-postgres
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres_user -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  backend-postgres:
+
+volumes:
+  pg-data:
